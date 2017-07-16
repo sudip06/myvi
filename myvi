@@ -1,0 +1,71 @@
+#!/bin/bash
+
+usage="Usage:myvi [-i] [-d initDir] <fileToSearch>"
+
+while getopts ":d:i" opt; do
+  case $opt in
+    d)
+      initDir=$OPTARG
+      ;;
+    i)
+      case="i"
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      echo "${usage}"
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
+if ! [[ -n ${initDir} ]];then
+    initDir="${PWD}"
+fi
+
+fileName=${!#}
+
+function checkParams
+{
+if [ ! -d "$1" ]; then
+	echo "initial directory to begin search is incorrect"
+	return 1
+fi
+
+#if [[ "$2" =~ [^a-zA-Z0-9] ]]; then 
+#	echo "Invalid filename"
+#	return 1
+#fi
+
+return 0
+
+}
+
+checkParams ${initDir} ${fileName}
+if [ $? != 0 ];then exit 1;fi
+myarr=( $(find "${initDir}" -${case}name "${fileName}") )
+if [ "${#myarr[@]}" -eq 1 ]; then
+    vim ${myarr[0]}
+elif [ "${#myarr[@]}" -gt 1 ]; then
+    total=${#myarr[@]}
+    # 
+    for (( i=0; i<=$(( $total -1 )); i++ ))
+    do
+        if [ -f ${myarr[$i]} ]; then
+            echo "(${i})${myarr[$i]}(f)"
+        elif [ -d ${myarr[$i]} ]; then
+            echo "(${i})${myarr[$i]}(d)"
+        fi
+    done
+    echo ""
+    read -p "Enter your choice:" choice
+    while  ! [ ${choice} -eq ${choice} 2> /dev/null ] || [ ${choice} -lt 0 ] || [ ${choice} -ge ${total} ] 
+    do
+        read -p "Invalid entry, please try again:" choice
+    done 
+    vim ${myarr[${choice-1}]}
+fi
+
